@@ -14,6 +14,16 @@ function clear() {
     ctx.fillRect(0, 0, game.width, game.height)
 }
 
+function getColor(){
+    return FOREGROUND
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
 function point({x, y}){
     const size = 20
     ctx.fillStyle = FOREGROUND
@@ -27,6 +37,19 @@ function line(p1, p2) {
     ctx.moveTo(p1.x, p1.y);
     ctx.lineTo(p2.x, p2.y);
     ctx.stroke();
+}
+
+function face(ps) {
+    console.log(ps)
+    ctx.fillStyle = getColor();
+    ctx.beginPath();
+    ctx.moveTo(ps[0].x, ps[0].y);
+    for (let i = 1; i < ps.length; ++i) {
+        ctx.lineTo(ps[i].x, ps[i].y);
+    }
+    ctx.lineTo(ps[0].x, ps[0].y);
+    ctx.closePath();
+    ctx.fill();
 }
 
 function screen(cords) {
@@ -61,13 +84,20 @@ const vs = [
     {x: -0.25, y: -0.25, z: -0.25},
 ]
 
-const fs = [
+const ls = [
     [0, 1, 2, 3],
     [4, 5, 6, 7],
     [0, 4],
     [1, 5],
     [2, 6],
     [3, 7],
+]
+
+const fs = [
+    [0, 1, 2, 3],
+    [4, 5, 6, 7],
+    [1, 5, 4, 0],
+    [2, 3, 7, 6],
 ]
 
 function translate_z({x, y, z}, dz) {
@@ -84,6 +114,16 @@ function rotate_xz({x, y, z}, angle){
     }
 }
 
+function rotate_xy({x, y, z}, angle){
+    const c = Math.cos(angle);
+    const s = Math.sin(angle);
+    return {
+        x: x*c-y*s,
+        y: x*s+y*c,
+        z: z,
+    }
+}
+
 function frame() {
     const dt = 1/FPS;
     // dz += 1*dt
@@ -92,16 +132,30 @@ function frame() {
     // for (const v of vs) {
     //     point(screen(project(translate_z(rotate_xz(v, angle), dz))))
     // }
-    for (const f of fs) {
-        for (let i = 0; i < f.length; ++i) {
-            const a = vs[f[i]]
-            const b = vs[f[(i + 1)%f.length]]
+    for (const l of ls) {
+        for (let i = 0; i < l.length; ++i) {
+            const a = vs[l[i]]
+            const b = vs[l[(i + 1)%l.length]]
             line(
-                screen(project(translate_z(rotate_xz(a, angle), dz))),
-                screen(project(translate_z(rotate_xz(b, angle), dz))),
+                screen(project(translate_z(rotate_xy(rotate_xz(a, angle), angle), dz))),
+                screen(project(translate_z(rotate_xy(rotate_xz(b, angle), angle), dz))),
             )
         }
     }
+    
+    for (const f of fs) {
+        fz = []
+        for (i of f){
+            fz.push(
+                screen(project(translate_z(rotate_xy(rotate_xz(vs[i], angle), angle), dz))),
+            )
+
+        }
+        face(fz)
+
+    }
+
+
     setTimeout(frame, 1000/FPS);
 }
 setTimeout(frame, 1000/FPS);
