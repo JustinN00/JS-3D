@@ -14,15 +14,6 @@ function clear() {
     ctx.fillRect(0, 0, game.width, game.height)
 }
 
-function getColor(){
-    return FOREGROUND
-    var letters = '0123456789ABCDEF';
-    var color = '#';
-    for (var i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
 
 function point({x, y}){
     const size = 20
@@ -39,9 +30,24 @@ function line(p1, p2) {
     ctx.stroke();
 }
 
-function face(ps) {
-    console.log(ps)
-    ctx.fillStyle = getColor();
+
+function sortFaces(faces) {
+    function maxZ(vi) {
+        let maxZ = 0
+        for (i of vi) {
+            const calculated_z = translate_z(rotate_xy(rotate_xz(vs[i], angle), angle), dz).z
+            if (calculated_z > maxZ){
+                maxZ = calculated_z
+            }
+        }
+        return maxZ
+    }
+    return faces.sort((a, b) => maxZ(b.vs) - maxZ(a.vs))
+}
+
+
+function face(ps, c) {
+    ctx.fillStyle = c;
     ctx.beginPath();
     ctx.moveTo(ps[0].x, ps[0].y);
     for (let i = 1; i < ps.length; ++i) {
@@ -94,10 +100,10 @@ const ls = [
 ]
 
 const fs = [
-    {vs: [0, 1, 2, 3], c: "#921515"},
+    {vs: [0, 1, 2, 3], c: "#921515ff"},
     {vs: [4, 5, 6, 7], c: "#58a146ff"},
     {vs: [1, 5, 4, 0], c: "#d4cb4cff"},
-    {vs: [2, 3, 7, 6], c: "#20939480"},
+    {vs: [2, 3, 7, 6], c: "#209294ff"},
 ]
 
 function translate_z({x, y, z}, dz) {
@@ -129,9 +135,15 @@ function frame() {
     // dz += 1*dt
     angle += Math.PI*dt
     clear()
+
+    //Vertices
     // for (const v of vs) {
-    //     point(screen(project(translate_z(rotate_xz(v, angle), dz))))
+    //     point(screen(project(translate_z(rotate_xy(rotate_xz(v, angle), angle), dz))))
     // }
+
+
+
+    //Wireframe
     for (const l of ls) {
         for (let i = 0; i < l.length; ++i) {
             const a = vs[l[i]]
@@ -143,19 +155,19 @@ function frame() {
         }
     }
     
-    for (const f of fs) {
+    //Faces
+    sfs = sortFaces(fs)
+    for (const f of sfs) {
         fz = []
-        for (i of f){
+        for (i of f.vs){
             fz.push(
                 screen(project(translate_z(rotate_xy(rotate_xz(vs[i], angle), angle), dz))),
             )
 
         }
-        face(fz)
+        face(fz, f.c)
 
     }
-
-
     setTimeout(frame, 1000/FPS);
 }
 setTimeout(frame, 1000/FPS);
